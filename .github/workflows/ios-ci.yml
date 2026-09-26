@@ -1,0 +1,77 @@
+name: iOS CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  js-tests:
+    name: JS 测试与静态审计
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Safari 扩展 JS 单元测试
+        run: node scripts/test-safari-extension.mjs
+
+      - name: Swift 静态审计
+        run: node scripts/audit-static.mjs
+
+  macos-build-test:
+    name: macOS 编译与 Swift 单测
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 环境信息
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: 安装 XcodeGen 与 xcbeautify
+        run: brew install xcodegen xcbeautify
+
+      - name: 生成 Xcode 工程
+        run: |
+          xcodegen generate
+          xcodebuild -list -project StitchShot.xcodeproj
+
+      - name: 编译 App（模拟器，免签名）
+        run: |
+          xcodebuild build \
+            -project StitchShot.xcodeproj \
+            -scheme StitchShot \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify
+
+      - name: 运行 Swift 单元测试（StitchKit 包）
+        run: |
+          set -e
+          cd Packages/StitchKit
+          SCHEMES=$(xcodebuild -list | awk '/Schemes:/{flag=1;next}flag&&NF{print $1}')
+          SCHEME=$(echo "$SCHEMES" | grep -E -- '-Package$' | head -n 1 || true)
+          if [ -z "$SCHEME" ]; then SCHEME=$(echo "$SCHEMES" | head -n 1); fi
+          DEVICE=$(xcrun simctl list devices available | grep -m 1 "iPhone" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+\([^)]*\).*$//')
+          echo "测试 scheme: $SCHEME"
+          echo "测试模拟器: $DEVICE"
+          xcodebuild test \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,name=$DEVICE" \
+            -resultBundlePath "$GITHUB_WORKSPACE/TestResults.xcresult" \
+            | xcbeautify
+
+      - name: 上传测试结果（失败时）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults.xcresult
+          retention-days: 7

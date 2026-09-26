@@ -1,0 +1,37 @@
+{
+    "identifier": "StitchShot",
+    "nonRenewingSubscriptions": [],
+    "products": [
+        {
+            "displayPrice": "18.00",
+            "familyShareable": false,
+            "internalID": "A1B2C3D4-1111-2222-3333-444455556666",
+            "localizations": [
+                {
+                    "description": "一次购买，永久解锁：带壳截图、自动化带壳输出。",
+                    "displayName": "StitchShot Pro",
+                    "locale": "zh_CN"
+                },
+                {
+                    "description": "One-time purchase: device shells and mockup automation output.",
+                    "displayName": "StitchShot Pro",
+                    "locale": "en_US"
+                }
+            ],
+            "productID": "com.example.stitchshot.pro",
+            "referenceName": "StitchShot Pro",
+            "type": "NonConsumable"
+        }
+    ],
+    "renewableSubscriptions": [],
+    "settings": {
+        "_applicationInternalID": "",
+        "_developerTeamID": "",
+        "_lastSynchronizedDate": 700000000
+    },
+    "subscriptionGroups": [],
+    "version": {
+        "major": 2,
+        "minor": 0
+    }
+}

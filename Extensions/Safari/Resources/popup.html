@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, sans-serif; width: 240px; padding: 16px; margin: 0; }
+        button { width: 100%; padding: 10px; font-size: 15px; border: none; border-radius: 8px;
+                 background: #0a84ff; color: #fff; cursor: pointer; margin-bottom: 8px; }
+        button.secondary { background: #e9e9eb; color: #000; }
+        button:disabled { opacity: 0.5; }
+        #status { margin-top: 6px; font-size: 13px; color: #666; text-align: center; min-height: 16px; }
+    </style>
+</head>
+<body>
+    <button id="capture-full">截取整页长图</button>
+    <button id="capture-visible" class="secondary">仅截取可见区域</button>
+    <div id="status"></div>
+    <script src="popup.js"></script>
+</body>
+</html>

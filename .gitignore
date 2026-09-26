@@ -1,0 +1,13 @@
+# Xcode（.xcodeproj 由 XcodeGen 生成，不入库）
+DerivedData/
+*.xcodeproj
+xcuserdata/
+*.xcuserstate
+*.xcresult
+
+# SwiftPM
+.build/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db

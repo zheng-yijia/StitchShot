@@ -1,0 +1,24 @@
+{
+    "manifest_version": 2,
+    "default_locale": "en",
+
+    "name": "StitchShot Web Capture",
+    "description": "Capture the current page into StitchShot.",
+    "version": "0.1.0",
+
+    "background": {
+        "scripts": ["background.js"],
+        "persistent": false
+    },
+
+    "content_scripts": [{
+        "matches": ["<all_urls>"],
+        "js": ["content.js"]
+    }],
+
+    "browser_action": {
+        "default_popup": "popup.html"
+    },
+
+    "permissions": ["activeTab", "<all_urls>"]
+}

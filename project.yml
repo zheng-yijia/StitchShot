@@ -1,0 +1,231 @@
+name: StitchShot
+
+options:
+  bundleIdPrefix: com.example.stitchshot
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    CODE_SIGN_STYLE: Automatic
+    # 在 Mac 上构建前填入你的 Apple Developer Team ID：
+    # DEVELOPMENT_TEAM: ""
+
+packages:
+  StitchKit:
+    path: Packages/StitchKit
+
+targets:
+  StitchShot:
+    type: application
+    platform: iOS
+    sources:
+      - App
+      - path: Configuration/StitchShot.storekit
+        buildPhase: none
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: StitchShot
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundlePackageType: APPL
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        ITSAppUsesNonExemptEncryption: false
+        NSPhotoLibraryUsageDescription: 需要访问您的照片与截图，以便进行拼接与编辑
+        NSPhotoLibraryAddUsageDescription: 需要保存拼接结果到您的相册
+        CFBundleURLTypes:
+          - CFBundleURLName: com.example.stitchshot.url
+            CFBundleURLSchemes:
+              - stitchshot
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    entitlements:
+      path: App/StitchShot.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.stitchshot
+    dependencies:
+      - package: StitchKit
+        product: StitchCore
+      - package: StitchKit
+        product: PhotoLibraryKit
+      - package: StitchKit
+        product: StitchEngine
+      - package: StitchKit
+        product: ScrollCaptureKit
+      - package: StitchKit
+        product: ImageEditorKit
+      - target: StitchShotBroadcast
+        embed: true
+      - target: StitchShotShare
+        embed: true
+      - target: StitchShotAction
+        embed: true
+      - target: StitchShotWidgets
+        embed: true
+      - target: StitchShotSafari
+        embed: true
+
+  StitchShotBroadcast:
+    type: app.extension
+    platform: iOS
+    sources:
+      - Extensions/Broadcast
+    info:
+      path: Extensions/Broadcast/Info.plist
+      properties:
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: StitchShot 滚动截图
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundlePackageType: XPC!
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.broadcast-services-upload
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SampleHandler
+          RPBroadcastProcessMode: RPBroadcastProcessModeSampleBuffer
+    entitlements:
+      path: Extensions/Broadcast/Broadcast.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.stitchshot
+    dependencies:
+      - package: StitchKit
+        product: StitchCore
+      - package: StitchKit
+        product: ScrollCaptureKit
+
+  StitchShotShare:
+    type: app.extension
+    platform: iOS
+    sources:
+      - Extensions/Share
+    info:
+      path: Extensions/Share/Info.plist
+      properties:
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: 存入 StitchShot
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundlePackageType: XPC!
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsImageWithMaxCount: 10
+    entitlements:
+      path: Extensions/Share/Share.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.stitchshot
+    dependencies:
+      - package: StitchKit
+        product: StitchCore
+
+  StitchShotAction:
+    type: app.extension
+    platform: iOS
+    sources:
+      - Extensions/Action
+    info:
+      path: Extensions/Action/Info.plist
+      properties:
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: 用 StitchShot 打开
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundlePackageType: XPC!
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ActionViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsImageWithMaxCount: 1
+    entitlements:
+      path: Extensions/Action/Action.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.stitchshot
+    dependencies:
+      - package: StitchKit
+        product: StitchCore
+
+  StitchShotWidgets:
+    type: app.extension
+    platform: iOS
+    sources:
+      - Extensions/Widgets
+    info:
+      path: Extensions/Widgets/Info.plist
+      properties:
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: StitchShot 小组件
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundlePackageType: XPC!
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Extensions/Widgets/Widgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.stitchshot
+    dependencies:
+      - package: StitchKit
+        product: StitchCore
+
+  StitchShotSafari:
+    type: extensionkit-extension
+    platform: iOS
+    sources:
+      - Extensions/Safari
+    info:
+      path: Extensions/Safari/Info.plist
+      properties:
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: StitchShot 网页快照
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundlePackageType: XPC!
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.Safari.web-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SafariWebExtensionHandler
+    entitlements:
+      path: Extensions/Safari/Safari.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.stitchshot
+    dependencies:
+      - package: StitchKit
+        product: StitchCore
