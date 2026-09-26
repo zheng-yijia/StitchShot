@@ -5,7 +5,7 @@
 ## 前置条件
 
 - macOS + Xcode 15 或更高版本（控制中心控件需 Xcode 16+ 的 iOS 18 SDK，旧 SDK 会自动跳过该控件）
-- [XcodeGen](https://github.com/yonsm/XcodeGen)：`brew install xcodegen`
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen)：`brew install xcodegen`
 - Apple Developer 账号（免费账号即可真机调试，但 App Group 与多扩展需要付费账号的 Provisioning 能力）
 
 ## 无 Mac 验证：GitHub Actions CI

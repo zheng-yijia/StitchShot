@@ -88,7 +88,7 @@ targets:
         embed: true
 
   StitchShotBroadcast:
-    type: app.extension
+    type: app-extension
     platform: iOS
     sources:
       - Extensions/Broadcast
@@ -118,7 +118,7 @@ targets:
         product: ScrollCaptureKit
 
   StitchShotShare:
-    type: app.extension
+    type: app-extension
     platform: iOS
     sources:
       - Extensions/Share
@@ -148,7 +148,7 @@ targets:
         product: StitchCore
 
   StitchShotAction:
-    type: app.extension
+    type: app-extension
     platform: iOS
     sources:
       - Extensions/Action
@@ -178,7 +178,7 @@ targets:
         product: StitchCore
 
   StitchShotWidgets:
-    type: app.extension
+    type: app-extension
     platform: iOS
     sources:
       - Extensions/Widgets
