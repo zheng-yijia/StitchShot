@@ -130,8 +130,9 @@ const importRules = [
 
 for (const file of swiftFiles) {
     const raw = readFileSync(file, "utf8");
+    const code = stripCommentsAndStrings(raw);
     for (const rule of importRules) {
-        if (rule.use.test(raw) && !rule.need.test(raw)) {
+        if (rule.use.test(code) && !rule.need.test(raw)) {
             report("missing-import", file, "-", `使用了 ${rule.name} 符号但未 import`);
         }
     }
