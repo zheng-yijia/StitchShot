@@ -45,6 +45,7 @@ jobs:
 
       - name: 编译 App（模拟器，免签名）
         run: |
+          set -o pipefail
           xcodebuild build \
             -project StitchShot.xcodeproj \
             -scheme StitchShot \
@@ -54,7 +55,7 @@ jobs:
 
       - name: 运行 Swift 单元测试（StitchKit 包）
         run: |
-          set -e
+          set -eo pipefail
           cd Packages/StitchKit
           SCHEMES=$(xcodebuild -list | awk '/Schemes:/{flag=1;next}flag&&NF{print $1}')
           SCHEME=$(echo "$SCHEMES" | grep -E -- '-Package$' | head -n 1 || true)

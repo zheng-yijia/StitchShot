@@ -271,6 +271,18 @@ if (schemeDeclared !== schemeInCode) {
     report("config", "project.yml", "-", `URL scheme 不一致: yml=${schemeDeclared} code=${schemeInCode}`);
 }
 
+// ---------- F. 已知非法参数标签（编译报错类） ----------
+
+// Toggle/Slider/Stepper/TextField/Picker 没有 isPresented: 初始化器
+const badLabel = /\b(Toggle|Slider|Stepper|TextField|Picker)\s*\(\s*(?:"[^"]*"|[A-Za-z_][\w.]*)?\s*,?\s*isPresented\s*:/g;
+for (const file of swiftFiles) {
+    const stripped = stripCommentsAndStrings(readFileSync(file, "utf8"));
+    for (const m of stripped.matchAll(badLabel)) {
+        const line = stripped.slice(0, m.index).split("\n").length;
+        report("bad-label", file, line, `${m[1]} 使用了不存在的 isPresented: 参数（应为 isOn:/value: 等）`);
+    }
+}
+
 // ---------- 输出 ----------
 
 if (findings.length === 0) {

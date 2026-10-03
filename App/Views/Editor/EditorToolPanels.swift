@@ -182,7 +182,7 @@ private struct WatermarkPanel: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            Toggle("启用水印", isPresented: Binding(
+            Toggle("启用水印", isOn: Binding(
                 get: { vm.model.watermark != nil },
                 set: { vm.setWatermark($0 ? WatermarkConfig() : nil) }
             ))
@@ -242,7 +242,7 @@ private struct BorderPanel: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            Toggle("启用边框", isPresented: Binding(
+            Toggle("启用边框", isOn: Binding(
                 get: { vm.model.border != nil },
                 set: { vm.setBorder($0 ? BorderConfig() : nil) }
             ))
@@ -278,7 +278,7 @@ private struct ShellPanel: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            Toggle("启用带壳", isPresented: Binding(
+            Toggle("启用带壳", isOn: Binding(
                 get: { vm.model.shell != nil },
                 set: { enable in
                     if enable, !pro.isPro {
@@ -327,7 +327,7 @@ private struct StatusBarPanel: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            Toggle("清理状态栏", isPresented: Binding(
+            Toggle("清理状态栏", isOn: Binding(
                 get: { vm.model.statusBarClean != nil },
                 set: { vm.setStatusBarClean($0 ? StatusBarCleanConfig() : nil) }
             ))

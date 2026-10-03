@@ -27,15 +27,19 @@ final class EditorRendererTests: XCTestCase {
         }
     }
 
-    /// 左黑右白。
-    private func makeSplitImage() -> UIImage {
+    /// 2px 黑白棋盘。
+    private func makeCheckerImage(width: Int = 100, height: Int = 100, check: Int = 2) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
-        return UIGraphicsImageRenderer(size: CGSize(width: 100, height: 100), format: format).image { ctx in
+        return UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).image { ctx in
             UIColor.black.setFill()
-            ctx.fill(CGRect(x: 0, y: 0, width: 50, height: 100))
+            ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
             UIColor.white.setFill()
-            ctx.fill(CGRect(x: 50, y: 0, width: 50, height: 100))
+            for y in stride(from: 0, to: height, by: check) {
+                for x in stride(from: 0, to: width, by: check) where (x / check + y / check) % 2 == 0 {
+                    ctx.fill(CGRect(x: x, y: y, width: check, height: check))
+                }
+            }
         }
     }
 
@@ -45,6 +49,19 @@ final class EditorRendererTests: XCTestCase {
                 var white: CGFloat = 0
                 return color.getWhite(&white, alpha: nil) ? white : nil
             }
+    }
+
+    /// 沿一行扫描黑白二值切换次数。
+    private func transitions(of image: UIImage, row: Int, from: Int, to: Int) -> Int {
+        var count = 0
+        var last: Int?
+        for x in from...to {
+            guard let l = luminance(of: image, at: CGPoint(x: CGFloat(x), y: CGFloat(row))) else { continue }
+            let bucket = l > 0.5 ? 1 : 0
+            if let last, last != bucket { count += 1 }
+            last = bucket
+        }
+        return count
     }
 
     // MARK: - Border
@@ -96,8 +113,8 @@ final class EditorRendererTests: XCTestCase {
 
     // MARK: - Mosaic
 
-    func testMosaicPixelateBlendsBlocksInsideStrokeOnly() {
-        var model = EditModel(base: makeSplitImage())
+    func testMosaicPixelateFlattensPatternInsideStrokeOnly() {
+        var model = EditModel(base: makeCheckerImage())
         let stroke = MosaicStroke(
             points: [CGPoint(x: 0.5, y: 0.3), CGPoint(x: 0.5, y: 0.7)],
             widthFraction: 0.3,
@@ -106,18 +123,13 @@ final class EditorRendererTests: XCTestCase {
         model.mosaicStrokes = [stroke]
         let out = EditorRenderer.renderCore(model)
 
-        // 像素块横跨黑白边界被混合，边界附近应出现中间灰
-        var graySamples = 0
-        for x in stride(from: 40, through: 60, by: 2) {
-            if let l = luminance(of: out, at: CGPoint(x: CGFloat(x), y: 50)), l > 0.2, l < 0.8 {
-                graySamples += 1
-            }
-        }
-        XCTAssertGreaterThanOrEqual(graySamples, 2)
+        // 笔迹内（竖带 x 35..65）：细棋盘被像素块抹平，二值切换应很少
+        let insideTransitions = transitions(of: out, row: 50, from: 42, to: 58)
+        XCTAssertLessThanOrEqual(insideTransitions, 4, "笔迹内应被像素块抹平")
 
-        // 笔迹之外保持原样
-        XCTAssertEqual(luminance(of: out, at: CGPoint(x: 10, y: 50)) ?? 1, 0, accuracy: 0.05)
-        XCTAssertEqual(luminance(of: out, at: CGPoint(x: 90, y: 50)) ?? 0, 1, accuracy: 0.05)
+        // 笔迹外：2px 棋盘保持原样，频繁切换
+        let outsideTransitions = transitions(of: out, row: 50, from: 72, to: 88)
+        XCTAssertGreaterThanOrEqual(outsideTransitions, 6, "笔迹外应保持棋盘不变")
     }
 
     // MARK: - Watermark
