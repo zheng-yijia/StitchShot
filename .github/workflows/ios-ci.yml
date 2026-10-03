@@ -75,4 +75,5 @@ jobs:
         with:
           name: test-results
           path: TestResults.xcresult
+          if-no-files-found: ignore
           retention-days: 7

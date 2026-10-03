@@ -24,7 +24,7 @@ final class ShareViewController: UIViewController {
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
                     defer { group.leave() }
                     guard let data else { return }
-                    try? SharedInbox.saveImage(data: data, source: "share")
+                    _ = try? SharedInbox.saveImage(data: data, source: "share")
                 }
             }
         }

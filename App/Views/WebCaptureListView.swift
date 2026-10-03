@@ -42,8 +42,8 @@ struct WebCaptureListView: View {
         }
         .navigationTitle("网页快照")
         .toolbar {
-            if !sessions.isEmpty {
-                ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if !sessions.isEmpty {
                     Button("清空") { showClearConfirm = true }
                 }
             }
