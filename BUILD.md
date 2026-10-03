@@ -45,15 +45,16 @@ stitchshot://x-callback-url/scroll        （打开滚动截图页，录屏需�
 
 ## 视频转实况照片（对标 IntoLive）
 
-工具页 →「视频转实况照片」：从相册选视频 → 拖滑杆截取片段（≤ 5 秒）→ 可选「直接截取 / 来回循环」（Boomerang）→ 转换 → 长按预览 → 保存到相册。
+工具页 →「视频转实况照片」：从相册选视频 → 拖滑杆截取片段（≤ 5 秒）→ 可选「直接截取 / 来回循环」（Boomerang）→ 可选「保留声音」→ 转换 → 长按预览 → 保存到相册。
 
 实现要点（`Packages/StitchKit/Sources/LivePhotoKit`）：
 
 - 输出一对资源：`still.jpg`（封面帧 + Apple Maker Note `{17: identifier}`）与 `video.mov`（H.264 + `mdta` content identifier + still-image-time 元数据轨道），保存进相册即为系统原生实况照片
-- 一律重编码 H.264（丢音频），方向由视频轨 `preferredTransform` 保留
+- 视频一律重编码 H.264，方向由视频轨 `preferredTransform` 保留
+- 音频在「直接截取」模式下以直通方式保留（`AVAssetReaderTrackOutput` 输出设置 nil、不解码不重编码），时间戳整体平移到零基线；「来回循环」模式无声音（倒放音频无意义）
 - 来回循环为 正放 + 倒放折返（首尾不重复），帧数以 JPEG 中间态控制在 120 帧内
 - 转换在后台线程执行；保存后自动清理临时文件
-- 单测覆盖：资源对生成、JPEG 魔数与 maker note、content identifier、元数据轨道、时长夹取、非法范围报错
+- 单测覆盖：资源对生成、JPEG 魔数与 maker note、content identifier、元数据轨道、时长夹取、非法范围报错、音频保留与时间戳归零、关音频/来回循环无音轨
 
 模拟器与真机均可测（保存到模拟器相册后可用系统照片 App 长按预览）；无网络/无账号要求。
 

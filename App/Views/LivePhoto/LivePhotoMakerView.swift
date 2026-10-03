@@ -15,6 +15,7 @@ struct LivePhotoMakerView: View {
     @State private var trimStart: Double = 0
     @State private var trimLength: Double = 3
     @State private var loopMode: LivePhotoLoopMode = .trim
+    @State private var preservesAudio = true
     @State private var isConverting = false
     @State private var isSaving = false
     @State private var didSave = false
@@ -118,6 +119,19 @@ struct LivePhotoMakerView: View {
             .onChange(of: loopMode) { _ in
                 resetConvertedResult()
             }
+            Toggle(isOn: $preservesAudio) {
+                Text("保留声音")
+            }
+            .disabled(loopMode == .boomerang)
+            .onChange(of: preservesAudio) { _ in
+                resetConvertedResult()
+            }
+            if loopMode == .boomerang {
+                Text("来回循环模式不含声音")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 
@@ -172,6 +186,7 @@ struct LivePhotoMakerView: View {
         options.trimStart = CMTime(seconds: trimStart, preferredTimescale: 600)
         options.trimDuration = CMTime(seconds: trimLength, preferredTimescale: 600)
         options.loopMode = loopMode
+        options.preservesAudio = loopMode == .trim && preservesAudio
 
         Task {
             do {

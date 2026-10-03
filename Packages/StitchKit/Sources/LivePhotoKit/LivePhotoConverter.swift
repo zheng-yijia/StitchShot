@@ -11,8 +11,10 @@ import UniformTypeIdentifiers
 /// - `video.mov`：H.264 视频 + `mdta` content identifier 电影元数据
 ///   + `mdta/com.apple.quicktime.still-image-time` 元数据轨道
 ///
-/// 说明：为保证确定性与兼容性，视频一律重编码为 H.264（丢音频），
-/// 方向由视频轨 `preferredTransform` 保留，不做像素级旋转。
+/// 说明：为保证确定性与兼容性，视频一律重编码为 H.264（逐帧追加、
+/// 时间轴从零开始）；方向由视频轨 `preferredTransform` 保留，不做像素级旋转。
+/// 音频在「直接截取」模式下以直通方式保留（不解码、不重编码），
+/// 时间戳整体平移到零基线；「来回循环」模式无声音。
 public enum LivePhotoConverter {
 
     /// 单次导出时长上限（秒）。
@@ -74,6 +76,7 @@ public enum LivePhotoConverter {
             fps: fps,
             frameStride: frameStride,
             loopMode: options.loopMode,
+            preservesAudio: options.preservesAudio,
             coverTime: options.coverTime,
             identifier: identifier,
             outputURL: videoURL
@@ -100,6 +103,7 @@ public enum LivePhotoConverter {
         fps: Int32,
         frameStride: Int,
         loopMode: LivePhotoLoopMode,
+        preservesAudio: Bool,
         coverTime: CMTime,
         identifier: String,
         outputURL: URL
@@ -118,6 +122,25 @@ public enum LivePhotoConverter {
         trackOutput.alwaysCopiesSampleData = false
         guard reader.canAdd(trackOutput) else { throw LivePhotoError.assetReadFailed }
         reader.add(trackOutput)
+
+        // 音频独立使用第二个 reader，避免读取器内部缓冲互相拖慢。
+        var audioReader: AVAssetReader?
+        var audioTrackOutput: AVAssetReaderTrackOutput?
+        var audioFormatHint: CMFormatDescription?
+        if loopMode == .trim, preservesAudio,
+           let audioTrack = asset.tracks(withMediaType: .audio).first,
+           let formatHint = audioTrack.formatDescriptions.first as? CMFormatDescription,
+           let readerInstance = try? AVAssetReader(asset: asset) {
+            readerInstance.timeRange = range
+            let output = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: nil)
+            output.alwaysCopiesSampleData = false
+            if readerInstance.canAdd(output) {
+                readerInstance.add(output)
+                audioReader = readerInstance
+                audioTrackOutput = output
+                audioFormatHint = formatHint
+            }
+        }
 
         let writer: AVAssetWriter
         do {
@@ -141,6 +164,16 @@ public enum LivePhotoConverter {
         )
         guard writer.canAdd(videoInput) else { throw LivePhotoError.videoWriteFailed("无法添加视频轨道") }
         writer.add(videoInput)
+
+        var audioInput: AVAssetWriterInput?
+        if let formatHint = audioFormatHint {
+            let input = AVAssetWriterInput(mediaType: .audio, outputSettings: nil, sourceFormatHint: formatHint)
+            input.expectsMediaDataInRealTime = false
+            if writer.canAdd(input) {
+                writer.add(input)
+                audioInput = input
+            }
+        }
 
         var metadataAdaptor: AVAssetWriterInputMetadataAdaptor?
         if let hint = stillImageTimeFormatDescription() {
@@ -194,6 +227,39 @@ public enum LivePhotoConverter {
                 }
                 outputIndex += 1
             }
+        }
+
+        if let audioInput {
+            if let audioReader, let audioTrackOutput, audioReader.startReading() {
+                let videoDuration = CMTime(value: outputIndex, timescale: fps)
+                while let sample = audioTrackOutput.copyNextSampleBuffer() {
+                    if audioReader.status == .failed { break }
+                    guard CMSampleBufferGetNumSamples(sample) > 0 else { continue }
+                    let pts = CMTimeSubtract(CMSampleBufferGetPresentationTimeStamp(sample), range.start)
+                    if CMTimeCompare(pts, .zero) < 0 { continue }
+                    if CMTimeCompare(pts, videoDuration) >= 0 { break }
+
+                    var timing = CMSampleTimingInfo()
+                    guard CMSampleBufferGetSampleTimingInfo(sample, at: 0, timingInfoOut: &timing) == noErr else { continue }
+                    timing.presentationTimeStamp = pts
+                    timing.decodeTimeStamp = .invalid
+
+                    try waitUntilReady(audioInput, writer: writer, reader: reader)
+                    var shifted: CMSampleBuffer?
+                    let status = CMSampleBufferCreateCopyWithNewTiming(
+                        allocator: kCFAllocatorDefault,
+                        sampleBuffer: sample,
+                        sampleTimingEntryCount: 1,
+                        sampleTimingArray: &timing,
+                        sampleBufferOut: &shifted
+                    )
+                    guard status == noErr, let shifted else { continue }
+                    guard audioInput.append(shifted) else {
+                        throw LivePhotoError.videoWriteFailed(writer.error?.localizedDescription ?? "音频写入失败")
+                    }
+                }
+            }
+            audioInput.markAsFinished()
         }
 
         if let metadataAdaptor {

@@ -27,6 +27,8 @@ public struct LivePhotoOptions {
     public var loopMode: LivePhotoLoopMode
     /// 封面帧在输出视频时间轴上的位置。
     public var coverTime: CMTime
+    /// 保留视频原声（仅截取模式；来回循环模式无声音）。
+    public var preservesAudio: Bool
     /// 输出目录；nil 时自动创建独立临时目录。
     public var outputDirectory: URL?
 
@@ -35,12 +37,14 @@ public struct LivePhotoOptions {
         trimDuration: CMTime = CMTime(seconds: 3, preferredTimescale: 600),
         loopMode: LivePhotoLoopMode = .trim,
         coverTime: CMTime = .zero,
+        preservesAudio: Bool = true,
         outputDirectory: URL? = nil
     ) {
         self.trimStart = trimStart
         self.trimDuration = trimDuration
         self.loopMode = loopMode
         self.coverTime = coverTime
+        self.preservesAudio = preservesAudio
         self.outputDirectory = outputDirectory
     }
 }
