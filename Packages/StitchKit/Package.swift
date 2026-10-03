@@ -9,7 +9,8 @@ let package = Package(
         .library(name: "PhotoLibraryKit", targets: ["PhotoLibraryKit"]),
         .library(name: "StitchEngine", targets: ["StitchEngine"]),
         .library(name: "ScrollCaptureKit", targets: ["ScrollCaptureKit"]),
-        .library(name: "ImageEditorKit", targets: ["ImageEditorKit"])
+        .library(name: "ImageEditorKit", targets: ["ImageEditorKit"]),
+        .library(name: "LivePhotoKit", targets: ["LivePhotoKit"])
     ],
     targets: [
         .target(name: "StitchCore"),
@@ -17,8 +18,10 @@ let package = Package(
         .target(name: "StitchEngine", dependencies: ["StitchCore"]),
         .target(name: "ScrollCaptureKit", dependencies: ["StitchCore"]),
         .target(name: "ImageEditorKit", dependencies: ["StitchCore"]),
+        .target(name: "LivePhotoKit", dependencies: ["StitchCore"]),
         .testTarget(name: "StitchCoreTests", dependencies: ["StitchCore"]),
         .testTarget(name: "StitchEngineTests", dependencies: ["StitchEngine"]),
-        .testTarget(name: "ImageEditorKitTests", dependencies: ["ImageEditorKit"])
+        .testTarget(name: "ImageEditorKitTests", dependencies: ["ImageEditorKit"]),
+        .testTarget(name: "LivePhotoKitTests", dependencies: ["LivePhotoKit"])
     ]
 )

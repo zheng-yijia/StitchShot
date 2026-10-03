@@ -169,7 +169,7 @@ final class LivePhotoConverterTests: XCTestCase {
         options.trimStart = CMTime(seconds: 3, preferredTimescale: 600)
 
         XCTAssertThrowsError(try LivePhotoConverter.convert(videoURL: source, options: options)) { error in
-            guard case LivePhotoError.invalidTrimRange = error else {
+            guard let liveError = error as? LivePhotoError, case .invalidTrimRange = liveError else {
                 XCTFail("错误类型不符：\(error)")
                 return
             }
