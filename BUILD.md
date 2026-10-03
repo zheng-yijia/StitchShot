@@ -1,6 +1,6 @@
 # StitchShot 构建说明
 
-对标 Picsew 的 iOS 长截图与拼图工具。当前进度：**Phase 0–6 全部完成**（拼接引擎、滚动截图、图片编辑器、Safari 整页快照、Share/Action 扩展、URL Scheme 自动化、App Intents、控制中心、StoreKit 2 Pro 内购）。
+对标 Picsew 的 iOS 长截图与拼图工具。当前进度：**Phase 0–6 全部完成**（拼接引擎、滚动截图、图片编辑器、Safari 整页快照、Share/Action 扩展、URL Scheme 自动化、App Intents、控制中心、StoreKit 2 Pro 内购），另含**视频转实况照片**（对标 IntoLive）。
 
 ## 前置条件
 
@@ -15,7 +15,7 @@
 | Job | Runner | 内容 |
 |---|---|---|
 | js-tests | ubuntu | Safari 扩展 JS 单测 + Swift 静态审计（`scripts/`） |
-| macos-build-test | macos-15 | xcodegen 生成工程 → 免签名编译全部 6 个 Target → 在 iOS 模拟器跑 StitchKit 三个 Swift 单测 Target |
+| macos-build-test | macos-15 | xcodegen 生成工程 → 免签名编译全部 6 个 Target → 在 iOS 模拟器跑 StitchKit 四个 Swift 单测 Target（含 LivePhotoKit 的实况照片元数据断言） |
 
 - 无需任何 secrets 或开发者账号（模拟器构建免签名）。
 - 编译失败或单测失败时，在 Actions 页面下载 `test-results` artifact（xcresult）查看详情。
@@ -43,6 +43,20 @@ stitchshot://x-callback-url/scroll        （打开滚动截图页，录屏需�
 快捷指令（iOS 16+ 自动出现在 Shortcuts App）：拼接最新截图 / 拼接图片 / 打开滚动截图。
 控制中心（iOS 18+）：添加「滚动截图」控件一键进入录屏拼接。
 
+## 视频转实况照片（对标 IntoLive）
+
+工具页 →「视频转实况照片」：从相册选视频 → 拖滑杆截取片段（≤ 5 秒）→ 可选「直接截取 / 来回循环」（Boomerang）→ 转换 → 长按预览 → 保存到相册。
+
+实现要点（`Packages/StitchKit/Sources/LivePhotoKit`）：
+
+- 输出一对资源：`still.jpg`（封面帧 + Apple Maker Note `{17: identifier}`）与 `video.mov`（H.264 + `mdta` content identifier + still-image-time 元数据轨道），保存进相册即为系统原生实况照片
+- 一律重编码 H.264（丢音频），方向由视频轨 `preferredTransform` 保留
+- 来回循环为 正放 + 倒放折返（首尾不重复），帧数以 JPEG 中间态控制在 120 帧内
+- 转换在后台线程执行；保存后自动清理临时文件
+- 单测覆盖：资源对生成、JPEG 魔数与 maker note、content identifier、元数据轨道、时长夹取、非法范围报错
+
+模拟器与真机均可测（保存到模拟器相册后可用系统照片 App 长按预览）；无网络/无账号要求。
+
 ## Pro 内购配置（StoreKit 2）
 
 ### 本地测试（无需任何开发者账号）
@@ -63,6 +77,7 @@ stitchshot://x-callback-url/scroll        （打开滚动截图页，录屏需�
 
 - [ ] `xcodegen generate` 后 6 个 Target 全部签名通过，App Group 一致
 - [ ] 真机验证：多截图拼接（含接缝微调）、滚动截图全流程、编辑器七工具、Safari 整页快照、Share/Action 导入收件箱
+- [ ] 视频转实况照片：转换后在系统照片 App 长按预览，确认动态效果与封面帧正常（截取与来回循环各测一次）
 - [ ] 快捷指令三个 Intent 出现且可运行；iOS 18 设备控制中心可添加「滚动截图」
 - [ ] URL Scheme 自动化：`vert?in=latest&count=2&out=save` 冒烟测试
 - [ ] 本地 `StitchShot.storekit` 全流程：购买 → 权益解锁 → 恢复 → 撤销回落；再用沙盒账号复核
@@ -107,7 +122,7 @@ open StitchShot.xcodeproj
 - 证书 **7 天**过期，到期后在 Xcode 重新 Run 即可
 - 最多同时签名 3 个 App ID；每周最多注册 10 个
 - 无 TestFlight、不能创建 App Store Connect 内购（本地 `.storekit` 已覆盖内购流程测试）
-- **滚动截图（Broadcast 扩展）只能真机测**，模拟器没有系统录屏广播选择器；Safari 扩展、Widget/控制中心、快捷指令、URL Scheme 模拟器均可测
+- **滚动截图（Broadcast 扩展）只能真机测**，模拟器没有系统录屏广播选择器；Safari 扩展、Widget/控制中心、快捷指令、URL Scheme、视频转实况照片模拟器均可测
 
 ## Target 一览
 
@@ -124,7 +139,7 @@ open StitchShot.xcodeproj
 
 ```
 App/                  主 App（SwiftUI）
-Packages/StitchKit/   本地 Swift 包：StitchCore / PhotoLibraryKit / StitchEngine / ScrollCaptureKit / ImageEditorKit
+Packages/StitchKit/   本地 Swift 包：StitchCore / PhotoLibraryKit / StitchEngine / ScrollCaptureKit / ImageEditorKit / LivePhotoKit
 Extensions/           五个系统扩展
 ```
 

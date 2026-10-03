@@ -1,4 +1,5 @@
 import ImageEditorKit
+import Photos
 import SwiftUI
 
 /// 工具页：编辑器各工具入口（选图后直达对应工具）。
@@ -10,14 +11,29 @@ struct ToolsView: View {
         let tool: EditorTool
     }
 
+    private struct LiveSession: Identifiable {
+        let id = UUID()
+        let asset: PHAsset
+    }
+
+    private enum Route {
+        case editor(EditorTool)
+        case webCapture
+        case livePhoto
+    }
+
     private enum Sheet: Identifiable {
         case picker(EditorTool)
         case editor(EditSession)
+        case videoPicker
+        case livePhoto(LiveSession)
 
         var id: String {
             switch self {
             case .picker(let tool): return "picker-\(tool.rawValue)"
             case .editor(let session): return "editor-\(session.id.uuidString)"
+            case .videoPicker: return "video-picker"
+            case .livePhoto(let session): return "live-\(session.id.uuidString)"
             }
         }
     }
@@ -27,29 +43,30 @@ struct ToolsView: View {
         let name: String
         let icon: String
         let detail: String
-        let tool: EditorTool?
-        let isWebCapture: Bool
+        let route: Route
     }
 
     @State private var sheet: Sheet?
 
     private let rows: [ToolRow] = [
         ToolRow(name: "图片裁剪", icon: "crop", detail: "自由裁剪，手柄拖拽",
-                tool: .crop, isWebCapture: false),
+                route: .editor(.crop)),
         ToolRow(name: "马赛克", icon: "squareshape.dotted.squareshape", detail: "像素化 / 模糊涂抹",
-                tool: .mosaic, isWebCapture: false),
+                route: .editor(.mosaic)),
         ToolRow(name: "画线标注", icon: "pencil.tip.crop.circle", detail: "手绘、直线、箭头、矩形、椭圆",
-                tool: .annotate, isWebCapture: false),
+                route: .editor(.annotate)),
         ToolRow(name: "文字水印", icon: "textformat", detail: "九宫格位置自定义水印",
-                tool: .watermark, isWebCapture: false),
+                route: .editor(.watermark)),
         ToolRow(name: "纯色边框", icon: "square", detail: "为截图添加彩色边框",
-                tool: .border, isWebCapture: false),
+                route: .editor(.border)),
         ToolRow(name: "带壳截图", icon: "iphone", detail: "iPhone 刘海 / 灵动岛 / iPad 外壳",
-                tool: .shell, isWebCapture: false),
+                route: .editor(.shell)),
         ToolRow(name: "状态栏清理", icon: "menubar.rectangle", detail: "纯色填充或 9:41 理想状态栏",
-                tool: .statusBar, isWebCapture: false),
+                route: .editor(.statusBar)),
+        ToolRow(name: "视频转实况照片", icon: "livephoto", detail: "截取或来回循环，存为 Live Photo",
+                route: .livePhoto),
         ToolRow(name: "网页快照", icon: "safari", detail: "Safari 扩展整页截取，在此拼接",
-                tool: nil, isWebCapture: true)
+                route: .webCapture)
     ]
 
     var body: some View {
@@ -71,22 +88,31 @@ struct ToolsView: View {
                     ImageEditorView(original: session.image, presetTool: session.tool)
                 }
                 .navigationViewStyle(.stack)
+            case .videoPicker:
+                VideoPickerSheet { asset in
+                    self.sheet = .livePhoto(LiveSession(asset: asset))
+                }
+            case .livePhoto(let session):
+                LivePhotoMakerView(asset: session.asset)
             }
         }
     }
 
     @ViewBuilder
     private func rowContent(_ row: ToolRow) -> some View {
-        if row.isWebCapture {
+        switch row.route {
+        case .webCapture:
             NavigationLink(destination: WebCaptureListView()) {
                 rowLabel(row)
             }
-        } else {
+        case .editor(let tool):
             rowLabel(row)
                 .contentShape(Rectangle())
-                .onTapGesture {
-                    if let tool = row.tool { sheet = .picker(tool) }
-                }
+                .onTapGesture { sheet = .picker(tool) }
+        case .livePhoto:
+            rowLabel(row)
+                .contentShape(Rectangle())
+                .onTapGesture { sheet = .videoPicker }
         }
     }
 

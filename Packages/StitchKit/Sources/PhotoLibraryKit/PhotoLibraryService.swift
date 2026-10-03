@@ -1,3 +1,4 @@
+import AVFoundation
 import Photos
 import UIKit
 
@@ -78,6 +79,35 @@ public final class PhotoLibraryService {
     public func saveToPhotoLibrary(_ image: UIImage, completion: @escaping (Bool) -> Void) {
         PHPhotoLibrary.shared().performChanges {
             PHAssetChangeRequest.creationRequestForAsset(from: image)
+        } completionHandler: { success, _ in
+            completion(success)
+        }
+    }
+
+    // MARK: - 视频
+
+    public func fetchVideoAssets() -> PHFetchResult<PHAsset> {
+        let options = PHFetchOptions()
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        options.predicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.video.rawValue)
+        return PHAsset.fetchAssets(with: options)
+    }
+
+    public func requestAVAsset(for asset: PHAsset, completion: @escaping (AVAsset?) -> Void) {
+        let options = PHVideoRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .highQualityFormat
+        PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+            completion(avAsset)
+        }
+    }
+
+    /// 将 still.jpg + video.mov 保存为一枚系统实况照片。
+    public func saveLivePhoto(photoURL: URL, videoURL: URL, completion: @escaping (Bool) -> Void) {
+        PHPhotoLibrary.shared().performChanges {
+            let request = PHAssetCreationRequest.forAsset()
+            request.addResource(with: .photo, fileURL: photoURL, options: nil)
+            request.addResource(with: .pairedVideo, fileURL: videoURL, options: nil)
         } completionHandler: { success, _ in
             completion(success)
         }

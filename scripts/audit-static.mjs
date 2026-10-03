@@ -123,6 +123,7 @@ const importRules = [
     { use: /RPBroadcast|RPSystemBroadcastPickerView|RPScreenRecorder/, need: /import ReplayKit/, name: "ReplayKit" },
     { use: /CMSampleBuffer|CMGetAttachment/, need: /import CoreMedia|import AVFoundation/, name: "CoreMedia" },
     { use: /\bCIImage|\bCIFilter|\bCIContext|\bCIVector/, need: /import CoreImage/, name: "CoreImage" },
+    { use: /\bLivePhotoConverter\b|\bLivePhotoOptions\b|\bLivePhotoResult\b|\bLivePhotoLoopMode\b/, need: /import LivePhotoKit/, name: "LivePhotoKit", ownDir: "Sources/LivePhotoKit" },
     { use: /UTType\.image/, need: /import UniformTypeIdentifiers|import CoreServices/, name: "UniformTypeIdentifiers" },
     { use: /TimelineProvider|WidgetBundle/, need: /import WidgetKit/, name: "WidgetKit" },
     { use: /VNTranslationalImageRegistration|VNImageRequestHandler/, need: /import Vision/, name: "Vision" }
@@ -131,7 +132,9 @@ const importRules = [
 for (const file of swiftFiles) {
     const raw = readFileSync(file, "utf8");
     const code = stripCommentsAndStrings(raw);
+    const normalized = file.replace(/\\/g, "/");
     for (const rule of importRules) {
+        if (rule.ownDir && normalized.includes(rule.ownDir)) continue;
         if (rule.use.test(code) && !rule.need.test(raw)) {
             report("missing-import", file, "-", `使用了 ${rule.name} 符号但未 import`);
         }
