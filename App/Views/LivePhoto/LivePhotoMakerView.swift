@@ -189,7 +189,7 @@ struct LivePhotoMakerView: View {
 
     private func loadLivePhotoPreview(_ output: LivePhotoResult) {
         _ = PHLivePhoto.request(
-            withResourceFileURLs: [output.photoURL, output.videoURL],
+            withResourceFileURLs: [output.videoURL, output.photoURL],
             placeholderImage: nil,
             targetSize: CGSize(width: 600, height: 600),
             contentMode: .aspectFit
