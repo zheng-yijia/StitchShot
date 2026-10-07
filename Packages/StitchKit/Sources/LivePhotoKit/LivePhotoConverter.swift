@@ -129,7 +129,8 @@ public enum LivePhotoConverter {
         var audioFormatHint: CMFormatDescription?
         if loopMode == .trim, preservesAudio,
            let audioTrack = asset.tracks(withMediaType: .audio).first,
-           let formatHint = audioTrack.formatDescriptions.first as? CMFormatDescription,
+           // formatDescriptions 元素为 Any，条件转换 as? 在 Xcode 16.4 起是硬错误
+           let formatHint = audioTrack.formatDescriptions.first.map({ $0 as! CMFormatDescription }),
            let readerInstance = try? AVAssetReader(asset: asset) {
             readerInstance.timeRange = range
             let output = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: nil)

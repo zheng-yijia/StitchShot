@@ -116,6 +116,7 @@ final class LivePhotoConverterTests: XCTestCase {
             layout: nil,
             magicCookieSize: 0,
             magicCookie: nil,
+            extensions: nil,
             formatDescriptionOut: &formatDescription
         )
         guard formatStatus == noErr, let formatDescription else {
@@ -142,7 +143,7 @@ final class LivePhotoConverterTests: XCTestCase {
                 flags: 0,
                 blockBufferOut: &blockBuffer
             )
-            guard blockStatus == kCMBlockBufferNoErr, let blockBuffer else {
+            guard blockStatus == noErr, let blockBuffer else {
                 throw LivePhotoError.videoWriteFailed("无法创建静音数据块")
             }
             CMBlockBufferFillDataBytes(
