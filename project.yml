@@ -206,7 +206,7 @@ targets:
         product: StitchCore
 
   StitchShotSafari:
-    type: extensionkit-extension
+    type: app-extension
     platform: iOS
     sources:
       - Extensions/Safari

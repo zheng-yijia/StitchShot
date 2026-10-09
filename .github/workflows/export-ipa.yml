@@ -41,9 +41,12 @@ jobs:
           set -euo pipefail
           APP=$(ls -d build/Build/Products/Release-iphoneos/*.app | head -n 1)
           echo "App bundle: $APP"
+          file "$APP/StitchShot"
           file "$APP/StitchShot" | grep -q arm64
-          COUNT=$(ls -d "$APP/PlugIns/"*.appex | wc -l | tr -d ' ')
-          echo "PlugIns 扩展数量: $COUNT（期望 5）"
+          echo "--- PlugIns 目录 ---"
+          ls "$APP/PlugIns" || echo "（无 PlugIns 目录）"
+          COUNT=$(ls -d "$APP/PlugIns/"*.appex 2>/dev/null | wc -l | tr -d ' ' || true)
+          echo "PlugIns 扩展数量: ${COUNT}（期望 5）"
           [ "$COUNT" -eq 5 ]
 
       - name: 打包 full 版（主 App + 5 个扩展）
@@ -63,7 +66,7 @@ jobs:
           rm -rf Payload StitchShot-unsigned-core.ipa
           mkdir Payload
           cp -R "$APP" Payload/
-          rm -rf Payload/*.app/PlugIns
+          rm -rf Payload/*.app/PlugIns Payload/*.app/Extensions Payload/*.app/SystemExtensions
           zip -qry StitchShot-unsigned-core.ipa Payload
           shasum -a 256 StitchShot-unsigned-core.ipa
           echo "--- core 版结构（应无 PlugIns）---"

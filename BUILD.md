@@ -179,6 +179,6 @@ Extensions/           五个系统扩展
 
 ## 常见问题
 
-- **Safari 扩展 Target 报错**：`project.yml` 中其 `type` 为 `extensionkit-extension`（Xcode 15+ 模板）。若使用更老 Xcode，改为 `app.extension` 后重新生成。
+- **Safari 扩展嵌入位置**：其 `type` 必须是 `app-extension`——NSExtension 式 Safari 扩展要嵌进主 App 的 `PlugIns/`；若用 `extensionkit-extension` 会被放进 `Extensions/`，Xcode 会警告 "Foundation extension … must be embedded in PlugIns"，真机上 Safari 也可能发现不了该扩展。
 - **滚动截图录屏按钮找不到扩展**：确认真机运行（模拟器不支持系统录屏广播选择器），且 Bundle ID 与 `ScrollCaptureView.swift` 中一致。
 - **App Group 读写失败**：检查所有 Target 的 App Group 勾选一致且前缀与代码一致。
