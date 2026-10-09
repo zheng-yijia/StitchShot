@@ -6,7 +6,7 @@
 
 - macOS + Xcode 15 或更高版本（控制中心控件需 Xcode 16+ 的 iOS 18 SDK，旧 SDK 会自动跳过该控件）
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)：`brew install xcodegen`
-- Apple Developer 账号（免费账号即可真机调试，但 App Group 与多扩展需要付费账号的 Provisioning 能力）
+- Apple Developer 账号（免费账号即可真机调试，无 Mac 时的安装方式见「无 Mac 真机安装」；App Group 与多扩展的完整能力需要付费账号）
 
 ## 无 Mac 验证：GitHub Actions CI
 
@@ -20,6 +20,17 @@
 - 无需任何 secrets 或开发者账号（模拟器构建免签名）。
 - 编译失败或单测失败时，在 Actions 页面下载 `test-results` artifact（xcresult）查看详情。
 - Runner 镜像更新导致模拟器/Scheme 名漂移时，脚本会自动探测可用的 iPhone 模拟器与包测试 Scheme，一般无需改动。
+
+### 导出无签名 IPA（真机侧载，手动触发）
+
+`.github/workflows/export-ipa.yml` 不会自动运行，需在 Actions 页面手动 Run workflow。产出 `stitchshot-unsigned-ipa` artifact（保留 14 天）：
+
+| 变体 | 内容 | 适用 |
+|---|---|---|
+| full | 主 App + 5 个系统扩展（6 个 bundle ID） | 付费账号，或想尝试完整安装 |
+| core | 仅主 App | 免费 Apple ID（限额较严，推荐先装） |
+
+在 Windows 上用 Sideloadly/AltStore 以免费 Apple ID 重签名后安装到 iPhone，见「无 Mac 真机安装」。
 
 ## URL Scheme 自动化（对标 Picsew）
 
@@ -84,6 +95,7 @@ stitchshot://x-callback-url/scroll        （打开滚动截图页，录屏需�
 - [ ] 本地 `StitchShot.storekit` 全流程：购买 → 权益解锁 → 恢复 → 撤销回落；再用沙盒账号复核
 - [ ] iPad 各页面单栏栈式导航显示正常
 - [ ] App Store 截图与隐私清单（照片读写、无数据收集）
+- [ ] （说明）免费 Apple ID 只能覆盖主 App 内功能（见「无 Mac 真机安装」的可测范围）；滚动截图全流程、Share/Action 收件箱、Safari 快照、控制中心、沙盒内购需付费账号
 
 ## 生成工程
 
@@ -108,22 +120,43 @@ open StitchShot.xcodeproj
 3. **App Group**：在开发者后台或通过 Xcode 的 Signing & Capabilities 为全部 6 个 Target 勾选同一个 App Group（entitlements 文件已声明，自动签名会尝试自动创建；若失败请先在 [developer.apple.com](https://developer.apple.com/account/resources/identifiers/list/applicationGroup) 手动注册）。
 4. 选择 `StitchShot` scheme，连接真机或模拟器运行。
 
-## 免费 Apple ID 真机调试（无付费开发者账号）
+## 无 Mac 真机安装（免费 Apple ID）
 
-没有 Mac 时可先靠 GitHub Actions CI（见上文）完成编译与单测验证；租一台云 Mac（MacinCloud / Scaleway，按小时计费）即可用**免费 Apple ID** 把 App 装到自己的 iPhone 上：
+两条路线都无需付费开发者账号、无需 Mac。
+
+### 路线 A：Windows + Sideloadly（推荐，方案①）
+
+1. GitHub → Actions →「导出无签名 IPA（真机侧载）」→ Run workflow，等待完成后下载 `stitchshot-unsigned-ipa` artifact
+2. Windows 安装「Apple 设备」（Microsoft Store）或 iTunes（提供 USB 驱动），再装 [Sideloadly](https://sideloadly.io)
+3. USB 连接 iPhone，把 ipa 拖入 Sideloadly，填你的 Apple ID，Start（自动以免费 Personal Team 重签名）
+4. 手机首次安装后：设置 → 通用 → VPN与设备管理 → 信任你的 Apple ID；iOS 16+ 还需 设置 → 隐私与安全性 → 开发者模式 → 打开并重启
+5. **建议先装 core 版**（仅主 App）：免费账号同时最多 3 个 App、每周最多注册 10 个 App ID，且 5 个扩展会各占一个 App ID 额度；full 版 6 个 bundle ID 可能超限报错，core 版最稳
+6. 证书 **7 天**过期：到期重新侧载同一 ipa 即可，App 数据保留
+
+### 路线 B：云 Mac + Xcode
+
+租一台云 Mac（MacinCloud / Scaleway，按小时计费）：
 
 1. Xcode → Settings → Accounts → `+` 登录任意 Apple ID（自动生成 "Personal Team"）
-2. 按「首次配置」把 `bundleIdPrefix` 与 App Group 改成你的唯一前缀（免费账号自动签名要求全局唯一，`com.example.*` 会冲突）
-3. 6 个 Target → Signing & Capabilities → Team 全部选你的 Personal Team；App Group 勾选同一容器（免费账号支持 App Group，自动签名会注册容器；若个别 Target 报错，重选 Team 让 Xcode 重新生成描述文件）
-4. 真机运行后首次启动前：设备上 设置 → 通用 → VPN与设备管理 → 信任你的开发者证书
-5. 内购测试用上一节的 `StitchShot.storekit` 本地配置，无需 App Store Connect
+2. 按「首次配置」把 `bundleIdPrefix` 改成你的唯一前缀（免费账号自动签名要求全局唯一，`com.example.*` 会冲突）
+3. 6 个 Target → Signing & Capabilities → Team 全部选你的 Personal Team；**不要勾选 App Group**（免费账号不支持，勾了会报错）
+4. 真机运行后首次启动前：设置 → 通用 → VPN与设备管理 → 信任你的开发者证书
 
-免费账号的限制：
+### 免费账号的限制（两条路线相同）
 
-- 证书 **7 天**过期，到期后在 Xcode 重新 Run 即可
-- 最多同时签名 3 个 App ID；每周最多注册 10 个
-- 无 TestFlight、不能创建 App Store Connect 内购（本地 `.storekit` 已覆盖内购流程测试）
-- **滚动截图（Broadcast 扩展）只能真机测**，模拟器没有系统录屏广播选择器；Safari 扩展、Widget/控制中心、快捷指令、URL Scheme、视频转实况照片模拟器均可测
+- **不支持 App Group**：Xcode 勾选会提示 "Personal development teams do not support the App Groups capability"。因此以下依赖跨进程共享的功能在真机上失效（代码有兜底、不会崩溃，但读不到共享数据）：
+  - Share/Action 扩展 → 主 App 收件箱
+  - 滚动截图：录屏广播扩展无法把截取结果交给主 App
+  - 小组件 / 控制中心控件的路由
+  - Pro 状态跨扩展同步
+- 同时最多 3 个 App；每周最多注册 10 个 App ID；证书 7 天有效
+- 内购无法在真机验证：`.storekit` 本地配置只在 Xcode 启动时生效；侧载包连的是真实 App Store（没有商品记录），沙盒账号又需要付费账号
+- 无 TestFlight、不能创建 App Store Connect 内购
+
+**方案①（免费）的真机可测范围**：多截图拼接（含接缝微调）、编辑器七工具、视频转实况照片（声音 / Boomerang / 长按预览）、URL Scheme、快捷指令、相册权限流程、iPad 布局。
+**需付费账号（$99）才能验证**：滚动截图录屏全流程、Share/Action 收件箱、Safari 整页快照入收件箱、控制中心控件、沙盒内购、TestFlight。
+
+另外：**滚动截图（Broadcast 扩展）只能真机测**，模拟器没有系统录屏广播选择器；Safari 扩展、Widget/控制中心、快捷指令、URL Scheme、视频转实况照片在模拟器上均可测。
 
 ## Target 一览
 

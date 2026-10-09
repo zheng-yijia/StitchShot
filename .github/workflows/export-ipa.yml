@@ -1,0 +1,103 @@
+name: 导出无签名 IPA（真机侧载）
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  export-ipa:
+    name: 构建并导出无签名 IPA
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 XcodeGen
+        run: brew install xcodegen
+
+      - name: 生成 Xcode 工程
+        run: xcodegen generate
+
+      - name: 编译 Release（真机 arm64，免签名）
+        run: |
+          set +e
+          xcodebuild build \
+            -project StitchShot.xcodeproj \
+            -scheme StitchShot \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            > build.log 2>&1
+          STATUS=$?
+          tail -n 200 build.log
+          exit $STATUS
+
+      - name: 验证构建产物
+        run: |
+          set -euo pipefail
+          APP=$(ls -d build/Build/Products/Release-iphoneos/*.app | head -n 1)
+          echo "App bundle: $APP"
+          file "$APP/StitchShot" | grep -q arm64
+          COUNT=$(ls -d "$APP/PlugIns/"*.appex | wc -l | tr -d ' ')
+          echo "PlugIns 扩展数量: $COUNT（期望 5）"
+          [ "$COUNT" -eq 5 ]
+
+      - name: 打包 full 版（主 App + 5 个扩展）
+        run: |
+          set -euo pipefail
+          APP=$(ls -d build/Build/Products/Release-iphoneos/*.app | head -n 1)
+          rm -rf Payload StitchShot-unsigned-full.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry StitchShot-unsigned-full.ipa Payload
+          shasum -a 256 StitchShot-unsigned-full.ipa
+
+      - name: 打包 core 版（仅主 App，适配免费账号限额）
+        run: |
+          set -euo pipefail
+          APP=$(ls -d build/Build/Products/Release-iphoneos/*.app | head -n 1)
+          rm -rf Payload StitchShot-unsigned-core.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/
+          rm -rf Payload/*.app/PlugIns
+          zip -qry StitchShot-unsigned-core.ipa Payload
+          shasum -a 256 StitchShot-unsigned-core.ipa
+          echo "--- core 版结构（应无 PlugIns）---"
+          ls -R Payload | head -n 60
+
+      - name: 写入侧载说明
+        run: |
+          cat > SIDELOAD-README.txt <<'EOF'
+          StitchShot 无签名 IPA 侧载说明（免费 Apple ID，Windows）
+          ==========================================================
+
+          1. Windows 准备：安装「Apple 设备」（Microsoft Store）或 iTunes，
+             确认连上 iPhone 后电脑能识别设备；再安装 Sideloadly（https://sideloadly.io）。
+          2. 把本目录中的 ipa 拖入 Sideloadly，填写你的 Apple ID，点击 Start。
+          3. 手机首次安装后需信任：设置 → 通用 → VPN与设备管理 → 信任你的 Apple ID；
+             iOS 16+ 还需：设置 → 隐私与安全性 → 开发者模式 → 打开（会重启手机）。
+          4. 两个版本怎么选（建议先装 core）：
+             - StitchShot-unsigned-core.ipa：仅主 App。免费账号限额较严
+               （同时最多 3 个 App、每周最多 10 个 App ID，扩展可能占额度），
+               拼接 / 编辑器 / 实况照片 / URL Scheme / 快捷指令 都能测。
+             - StitchShot-unsigned-full.ipa：含 5 个系统扩展（共 6 个 bundle ID）。
+               若 Sideloadly 报额度类错误，说明免费账号装不下，请改用 core 版。
+          5. 免费账号不支持 App Group，以下跨进程功能会失效（不会崩溃）：
+             Share/Action 收件箱、滚动截图录屏合成、小组件/控制中心路由、
+             Pro 状态跨扩展同步；内购也无法在侧载包上测试。
+          6. 证书 7 天过期：到期后用 Sideloadly 重新侧载同版本即可，App 数据保留。
+          EOF
+
+      - name: 上传 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stitchshot-unsigned-ipa
+          path: |
+            StitchShot-unsigned-full.ipa
+            StitchShot-unsigned-core.ipa
+            SIDELOAD-README.txt
+          retention-days: 14
