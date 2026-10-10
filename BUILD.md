@@ -127,7 +127,7 @@ open StitchShot.xcodeproj
 ### 路线 A：Windows + Sideloadly（推荐，方案①）
 
 1. GitHub → Actions →「导出无签名 IPA（真机侧载）」→ Run workflow，等待完成后下载 `stitchshot-unsigned-ipa` artifact
-2. Windows 安装「Apple 设备」（Microsoft Store）或 iTunes（提供 USB 驱动），再装 [Sideloadly](https://sideloadly.io)
+2. Windows 安装 [iTunes 官网版](https://www.apple.com/itunes/)（**不要用微软商店版**，Sideloadly 官方要求官网版，自带 iPhone 驱动），再装 [Sideloadly](https://sideloadly.io)
 3. USB 连接 iPhone，把 ipa 拖入 Sideloadly，填你的 Apple ID，Start（自动以免费 Personal Team 重签名）
 4. 手机首次安装后：设置 → 通用 → VPN与设备管理 → 信任你的 Apple ID；iOS 16+ 还需 设置 → 隐私与安全性 → 开发者模式 → 打开并重启
 5. **建议先装 core 版**（仅主 App）：免费账号同时最多 3 个 App、每周最多注册 10 个 App ID，且 5 个扩展会各占一个 App ID 额度；full 版 6 个 bundle ID 可能超限报错，core 版最稳

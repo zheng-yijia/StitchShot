@@ -78,7 +78,7 @@ jobs:
           StitchShot 无签名 IPA 侧载说明（免费 Apple ID，Windows）
           ==========================================================
 
-          1. Windows 准备：安装「Apple 设备」（Microsoft Store）或 iTunes，
+          1. Windows 准备：安装 apple.com 官网版 iTunes（不要用微软商店版），
              确认连上 iPhone 后电脑能识别设备；再安装 Sideloadly（https://sideloadly.io）。
           2. 把本目录中的 ipa 拖入 Sideloadly，填写你的 Apple ID，点击 Start。
           3. 手机首次安装后需信任：设置 → 通用 → VPN与设备管理 → 信任你的 Apple ID；
